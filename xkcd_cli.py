@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 import subprocess
 import re
+from datetime import datetime
 
 
 comic_url = "https://xkcd.com/info.0.json"
@@ -44,6 +45,7 @@ def get_font(size):
 
 
 def place_text(textt, font, x, y, r, g, b):
+    draw = ImageDraw.Draw(background)
     bbox = draw.textbbox((0, 0), textt, font=font)
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
@@ -64,7 +66,55 @@ def get_mommy_output():
 
     mommy_output = re.sub(r'\x1b\[[0-9;]*m', '', mommy_output)
     mommy_output = re.sub(r'~.*', '', mommy_output)
+    return mommy_output\
+    
+
+def get_mommy_output():
+    mommy_output = subprocess.run(
+            ["mommy"],
+            text=True,
+            capture_output=True,
+            check=True
+        ).stderr.strip()
+
+    mommy_output = re.sub(r'\x1b\[[0-9;]*m', '', mommy_output)
+    mommy_output = re.sub(r'~.*', '', mommy_output)
     return mommy_output
+
+
+def get_time():
+    sunrise, sunset = subprocess.run(
+        ["sunwait", "list", "52.237049N", "21.017532E"],
+        text=True,
+        capture_output=True,
+        check=True
+    ).stdout.strip().split(", ")
+
+    place_text(f"sunrise: {sunrise}     sunset: {sunset}", get_font(20), 1.05, 20, 150, 150, 150)
+
+    return sunrise, sunset
+
+
+def is_day():
+    sunrise, sunset = get_time()
+    sunrise_time = datetime.strptime(sunrise, "%H:%M").time()
+    sunset_time = datetime.strptime(sunset, "%H:%M").time()
+    now = datetime.now().time()
+
+    if sunrise_time <= now <= sunset_time:
+        place_img("sun.jpg")
+    else:
+        place_img("moon.jpg")
+
+    place_text(f"sunrise: {sunrise}     sunset: {sunset}", get_font(20), 1.05, 20, 150, 150, 150)
+
+
+def place_img(img):
+    img = Image.open(img)
+    aspect_ratio = img.height / img.width
+    img = img.resize((int(screen_width / 6), int(screen_width / 6 * aspect_ratio)))
+    width, height = img.size
+    background.paste(img, ((screen_width - width - 100),  screen_height - height - 700))
 
 
 if __name__ == "__main__":
@@ -88,6 +138,9 @@ if __name__ == "__main__":
     background = Image.new("RGB", (screen_width, screen_height), (0, 0, 0))
 
     background.paste(img_resized, (int((screen_width - new_width) / 2), screen_height - new_height - 100))
+
+    is_day()
+
 
     draw = ImageDraw.Draw(background)
     
