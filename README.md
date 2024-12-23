@@ -2,6 +2,8 @@
 
 This script downloads the latest XKCD comic, processes the image, and creates a custom wallpaper with additional information such as the current day, sunrise/sunset times, and a motivational message.
 
+![alt text](image.png)
+
 ## ✨ Features
 
 - **XKCD Integration**: Downloads the latest comic from XKCD.
