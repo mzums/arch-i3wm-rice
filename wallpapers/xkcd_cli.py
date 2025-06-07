@@ -9,6 +9,7 @@ from datetime import datetime
 
 comic_url = "https://xkcd.com/info.0.json"
 output_path = "/home/mzums/.config/latest_xkcd.png"
+screen_width, screen_height = 1080, 1920
 
 
 def get_comic():
@@ -54,19 +55,6 @@ def place_text(textt, font, x, y, r, g, b):
     text_y = (screen_height - text_height) // y
 
     draw.text((text_x, text_y), textt, font=font, fill=(r, g, b))
-
-
-def get_mommy_output():
-    mommy_output = subprocess.run(
-            ["mommy"],
-            text=True,
-            capture_output=True,
-            check=True
-        ).stderr.strip()
-
-    mommy_output = re.sub(r'\x1b\[[0-9;]*m', '', mommy_output)
-    mommy_output = re.sub(r'~.*', '', mommy_output)
-    return mommy_output\
     
 
 def get_mommy_output():
@@ -90,7 +78,7 @@ def get_time():
         check=True
     ).stdout.strip().split(", ")
 
-    place_text(f"sunrise: {sunrise}     sunset: {sunset}", get_font(20), 1.05, 20, 150, 150, 150)
+    place_text(f"sunrise: {sunrise}     sunset: {sunset}", get_font(20), 1.05, 25, 150, 150, 150)
 
     return sunrise, sunset
 
@@ -106,15 +94,31 @@ def is_day():
     else:
         place_img("moon.jpg")
 
-    place_text(f"sunrise: {sunrise}     sunset: {sunset}", get_font(20), 1.05, 20, 150, 150, 150)
-
 
 def place_img(img):
     img = Image.open(img)
     aspect_ratio = img.height / img.width
-    img = img.resize((int(screen_width / 6), int(screen_width / 6 * aspect_ratio)))
+    img = img.resize((int(screen_width / 5), int(screen_width / 5 * aspect_ratio)))
     width, height = img.size
-    background.paste(img, ((screen_width - width - 100),  screen_height - height - 700))
+    background.paste(img, (int((screen_width - width) / 1.15),  int((screen_height - height) / 15)))
+
+
+def resize_img(img, max_width, max_height):
+    max_width = int(max_width * screen_width)
+    max_height = int(max_height * screen_height)
+    width, height = img.size
+    if width > height:
+        scale = int(max_width / width)
+        width = max_width
+        height *= scale
+    else:
+        scale = int(max_height / height)
+        height = max_height
+        width *= scale
+
+    resized_img = img.resize((width, height))
+
+    return resized_img
 
 
 if __name__ == "__main__":
@@ -127,17 +131,11 @@ if __name__ == "__main__":
 
     cropped_img = crop_img(width, height)
 
-    width, height = cropped_img.size
-    max_height = 600
-    new_height = max_height
-    new_width = int((new_height / height) * width)
+    img_resized = resize_img(cropped_img, 0.8, 0.6)
 
-    img_resized = cropped_img.resize((new_width, new_height))
-
-    screen_width, screen_height = 1920, 1080
     background = Image.new("RGB", (screen_width, screen_height), (0, 0, 0))
 
-    background.paste(img_resized, (int((screen_width - new_width) / 2), screen_height - new_height - 100))
+    background.paste(img_resized, (int((screen_width - img_resized.width) / 2), int((screen_height - img_resized.height) / 1.8)))
 
     is_day()
 
@@ -146,11 +144,11 @@ if __name__ == "__main__":
     
     day_of_week = datetime.now().strftime('%A')
     textt = f"It's {day_of_week} outside\nstay safe and don't go out"
-    place_text(textt, get_font(30), 10, 10, 255, 255, 255)
+    place_text(textt, get_font(30), 7, 8, 255, 255, 255)
 
     mommy_output = get_mommy_output()
-    place_text(f"{mommy_output} \u2764\uFE0F", get_font(20), 20, 4, 255, 20, 147)
+    place_text(f"{mommy_output} \u2764\uFE0F", get_font(20), 20, 5, 255, 20, 147)
 
 
     background.save("/home/mzums/.config/latest_xkcd2.png")
-    os.system("feh --bg-fill /home/mzums/.config/latest_xkcd2.png")
+    os.system("feh --bg-center /home/mzums/.config/latest_xkcd2.png")
